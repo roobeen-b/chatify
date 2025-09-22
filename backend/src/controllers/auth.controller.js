@@ -115,9 +115,17 @@ export const updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url },
-      { new: true }
-    );
-    return res.status(200).json(updatedUser);
+      { new: true, runValidators: true }
+    ).select("-password");
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({
+      _id: updatedUser._id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      profilePic: updatedUser.profilePic,
+    });
   } catch (error) {
     console.error("Error updating profile:", error);
     return res.status(500).json({ message: "Internal server error" });

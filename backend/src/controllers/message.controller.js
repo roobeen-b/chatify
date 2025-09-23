@@ -95,10 +95,10 @@ export const getChatPartners = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     const chatPartnerIds = chats.map((chat) => {
-      if (chat.senderId.toString() === loggedInUserId.toString()) {
-        return chat.receiverId;
+      if (chat.senderId.equals(loggedInUserId)) {
+        return chat.receiverId.toString();
       } else {
-        return chat.senderId;
+        return chat.senderId.toString();
       }
     });
 

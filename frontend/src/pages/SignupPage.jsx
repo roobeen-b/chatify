@@ -10,6 +10,7 @@ import { Link } from "react-router";
 
 import { useAuthStore } from "../store/useAuthStore.js";
 import { BorderAnimatedContainer } from "../components/common/BorderAnimatedContainer";
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const { isSigningUp, signUp } = useAuthStore();
@@ -28,6 +29,10 @@ export default function SignupPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.fullName || !formData.email || !formData.password) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
     signUp(formData);
   };
 

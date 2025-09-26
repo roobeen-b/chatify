@@ -22,10 +22,10 @@ export const useChatStore = create((set, get) => ({
     try {
       set({ isUsersLoading: true });
       const response = await axiosInstance.get("/messages/contacts");
-      set({ allContacts: response.data });
+      set({ allContacts: response?.data });
     } catch (error) {
       console.error("Error fetching contacts:", error);
-      toast.error(error.response.data.message || "Error fetching contacts");
+      toast.error(error.response?.data?.message || "Error fetching contacts");
     } finally {
       set({ isUsersLoading: false });
     }
@@ -34,14 +34,26 @@ export const useChatStore = create((set, get) => ({
     try {
       set({ isUsersLoading: true });
       const response = await axiosInstance.get("/messages/chats");
-      set({ chats: response.data });
+      set({ chats: response?.data });
     } catch (error) {
       console.error("Error fetching chat partners:", error);
       toast.error(
-        error.response.data.message || "Error fetching chat partners"
+        error.response?.data?.message || "Error fetching chat partners"
       );
     } finally {
       set({ isUsersLoading: false });
+    }
+  },
+  getMessagesByUserId: async (userId) => {
+    try {
+      set({ isMessagesLoading: true });
+      const response = await axiosInstance.get(`/messages/${userId}`);
+      set({ messages: response?.data });
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      toast.error(error.response?.data?.message || "Error fetching messages");
+    } finally {
+      set({ isMessagesLoading: false });
     }
   },
 }));

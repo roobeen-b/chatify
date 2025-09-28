@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 import axiosInstance from "../lib/axios.js";
+import { useAuthStore } from "./useAuthStore.js";
 
 export const useChatStore = create((set, get) => ({
   allContacts: [],
@@ -9,6 +10,7 @@ export const useChatStore = create((set, get) => ({
   activeTab: "chats",
   selectedUser: null,
   isUsersLoading: false,
+  isSendingMessage: false,
   isMessagesLoading: false,
   isSoundEnabled: localStorage.getItem("isSoundEnabled") === true,
   toggleSound: () => {
@@ -54,6 +56,39 @@ export const useChatStore = create((set, get) => ({
       toast.error(error.response?.data?.message || "Error fetching messages");
     } finally {
       set({ isMessagesLoading: false });
+    }
+  },
+  sendMessage: async (messageData) => {
+    const { selectedUser, messages } = get();
+    const { authUser } = useAuthStore.getState();
+
+    const tempId = `temp-${Date.now()}`;
+
+    const optimisticMessage = {
+      _id: tempId,
+      isOptimistic: true,
+      senderId: authUser._id,
+      text: messageData.text,
+      image: messageData.image,
+      receiverId: selectedUser._id,
+      createdAt: new Date().toISOString(),
+    };
+
+    set({ messages: [...messages, optimisticMessage] });
+
+    try {
+      set({ isSendingMessage: true });
+      const response = await axiosInstance.post(
+        `/messages/send/${selectedUser._id}`,
+        messageData
+      );
+      set({ messages: [...messages, response?.data] });
+    } catch (error) {
+      set({ messages });
+      console.error("Error sending message:", error);
+      toast.error(error.response?.data?.message || "Error sending message");
+    } finally {
+      set({ isSendingMessage: false });
     }
   },
 }));

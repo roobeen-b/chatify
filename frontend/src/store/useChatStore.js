@@ -99,13 +99,13 @@ export const useChatStore = create((set, get) => ({
     }
   },
   subscribeToMessage: () => {
-    const { selectedUser, isSoundEnabled } = get();
-    if (!selectedUser) return;
-
     const { socket } = useAuthStore.getState();
     if (!socket) return;
 
     socket.on("newMessage", (newMessage) => {
+      const { selectedUser, isSoundEnabled } = get();
+      if (!selectedUser) return;
+
       const isMessageSentFromSelectedUser =
         newMessage.senderId === selectedUser._id;
       if (!isMessageSentFromSelectedUser) return;

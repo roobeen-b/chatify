@@ -33,8 +33,13 @@ export const MessageInput = () => {
         toast.error("Please select an image file");
         return;
       }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);
+      reader.onerror = () => toast.error("Error reading image");
       reader.readAsDataURL(file);
     }
   };
@@ -84,7 +89,7 @@ export const MessageInput = () => {
         />
         <button
           type="submit"
-          disabled={!text.trim() && !imagePreview}
+          disabled={(!text.trim() && !imagePreview) || isSendingMessage}
           className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg px-4 py-2 font-medium hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <SendIcon className="w-4 h-4 rotate-45" />

@@ -12,7 +12,7 @@ export const useChatStore = create((set, get) => ({
   isUsersLoading: false,
   isSendingMessage: false,
   isMessagesLoading: false,
-  isSoundEnabled: localStorage.getItem("isSoundEnabled") === true,
+  isSoundEnabled: localStorage.getItem("isSoundEnabled") === "true",
   toggleSound: () => {
     const newValue = !get().isSoundEnabled;
     localStorage.setItem("isSoundEnabled", newValue);
@@ -82,9 +82,16 @@ export const useChatStore = create((set, get) => ({
         `/messages/send/${selectedUser._id}`,
         messageData
       );
-      set({ messages: [...messages, response?.data] });
+      set((state) => ({
+        messages: [
+          ...state.messages.filter((msg) => msg._id !== tempId),
+          response?.data,
+        ],
+      }));
     } catch (error) {
-      set({ messages });
+      set((state) => ({
+        messages: state.messages.filter((msg) => msg._id !== tempId),
+      }));
       console.error("Error sending message:", error);
       toast.error(error.response?.data?.message || "Error sending message");
     } finally {

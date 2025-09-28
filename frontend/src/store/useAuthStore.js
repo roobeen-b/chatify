@@ -1,17 +1,24 @@
 import { create } from "zustand";
 import axiosInstance from "../lib/axios";
 import { toast } from "react-hot-toast";
+import { io } from "socket.io-client";
 
-export const useAuthStore = create((set) => ({
+const BASE_URL =
+  import.meta.env.MODE === "development" ? "http://localhost:4000" : "/";
+
+export const useAuthStore = create((set, get) => ({
+  socket: null,
   authUser: null,
-  isCheckingAuth: true,
+  onlineUsers: [],
   isSigningUp: false,
   isLoggingIn: false,
+  isCheckingAuth: true,
   isUpdatingProfile: false,
   checkAuth: async () => {
     try {
       const response = await axiosInstance.get("/auth/check-auth");
       set({ authUser: response.data });
+      get().connectSocket();
     } catch (error) {
       console.error("Error checking auth:", error);
       set({ authUser: null });
@@ -25,6 +32,7 @@ export const useAuthStore = create((set) => ({
       const response = await axiosInstance.post("/auth/signup", formData);
       toast.success("Signup successful");
       set({ authUser: response.data });
+      get().connectSocket();
     } catch (error) {
       console.error("Error signing up:", error);
       toast.error(error.response.data.message || "Error signing up");
@@ -38,6 +46,7 @@ export const useAuthStore = create((set) => ({
       const response = await axiosInstance.post("/auth/login", formData);
       toast.success("Login successful");
       set({ authUser: response.data });
+      get().connectSocket();
     } catch (error) {
       console.error("Error logging in:", error);
       toast.error(error.response.data.message || "Error logging in");
@@ -50,6 +59,7 @@ export const useAuthStore = create((set) => ({
       await axiosInstance.post("/auth/logout");
       toast.success("Logout successful");
       set({ authUser: null });
+      get().disconnectSocket();
     } catch (error) {
       console.error("Error logging out:", error);
       toast.error(error.response.data.message || "Error logging out");
@@ -69,6 +79,28 @@ export const useAuthStore = create((set) => ({
       toast.error(error.response.data.message || "Error updating profile");
     } finally {
       set({ isUpdatingProfile: false });
+    }
+  },
+  connectSocket: () => {
+    const { authUser } = get();
+    if (!authUser || get().socket?.connected) return;
+
+    const socket = io(BASE_URL, {
+      withCredentials: true,
+    });
+
+    socket.connect();
+    set({ socket });
+
+    socket.on("getOnlineUsers", (userIds) => {
+      set({ onlineUsers: userIds });
+    });
+  },
+  disconnectSocket: () => {
+    const { socket } = get();
+    if (socket?.connected) {
+      socket.disconnect();
+      set({ socket: null });
     }
   },
 }));

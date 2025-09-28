@@ -7,8 +7,14 @@ import { MessageInput } from "./MessageInput";
 import { useEffect, useRef } from "react";
 
 export const ChatContainer = () => {
-  const { selectedUser, messages, isMessagesLoading, getMessagesByUserId } =
-    useChatStore();
+  const {
+    selectedUser,
+    messages,
+    isMessagesLoading,
+    subscribeToMessage,
+    getMessagesByUserId,
+    unsubscribeFromMessages,
+  } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
@@ -23,6 +29,13 @@ export const ChatContainer = () => {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  useEffect(() => {
+    subscribeToMessage();
+    return () => {
+      unsubscribeFromMessages();
+    };
+  }, [subscribeToMessage, unsubscribeFromMessages]);
 
   return (
     <>

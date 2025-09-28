@@ -22,7 +22,10 @@ io.on("connection", (socket) => {
   console.log("Socket connection accepted for user:", socket.user.fullName);
 
   const userId = socket.userId;
-  userSocketMap[userId] = socket.id;
+  if (!userSocketMap[userId]) {
+    userSocketMap[userId] = [];
+  }
+  userSocketMap[userId].push(socket.id);
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
@@ -31,7 +34,12 @@ io.on("connection", (socket) => {
       "Socket connection disconnected for user:",
       socket.user.fullName
     );
-    delete userSocketMap[userId];
+    userSocketMap[userId] = userSocketMap[userId]?.filter(
+      (socketId) => socketId !== socket.id
+    );
+    if (userSocketMap[userId]?.length === 0) {
+      delete userSocketMap[userId];
+    }
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });

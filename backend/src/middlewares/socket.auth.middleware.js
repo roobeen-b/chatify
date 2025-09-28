@@ -4,10 +4,9 @@ import User from "../models/User.js";
 
 export const socketAuthMiddleware = async (socket, next) => {
   try {
-    const token = socket.handshake.headers.cookie
-      ?.split("; ")
-      .find((cookie) => cookie.startsWith("token="))
-      ?.split("=")[1];
+    const cookie = socket.handshake.headers.cookie || "";
+    const tokenMatch = cookie.match(/token=([^;]+)/);
+    const token = tokenMatch ? tokenMatch[1] : null;
     if (!token) {
       console.log("Socket connection rejected: No token found");
       return next(new Error("Unauthorized - No token found"));

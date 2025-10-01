@@ -1,10 +1,12 @@
+import { useEffect, useRef, useState } from "react";
+
 import { useChatStore } from "../store/useChatStore";
-import { ChatHeader } from "./ChatHeader";
 import { useAuthStore } from "../store/useAuthStore";
+
+import { ChatHeader } from "./ChatHeader";
+import { MessageInput } from "./MessageInput";
 import { NoChatHistoryPlaceholder } from "./NoChatHistoryPlaceholder";
 import { MessagesLoadingSkeleton } from "./common/MessagesLoadingSkeleton";
-import { MessageInput } from "./MessageInput";
-import { useEffect, useRef } from "react";
 
 export const ChatContainer = () => {
   const {
@@ -14,8 +16,9 @@ export const ChatContainer = () => {
     isMessagesLoading,
     getMessagesByUserId,
   } = useChatStore();
-  const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+  const { authUser, socket } = useAuthStore();
+  const [typingUsers, setTypingUsers] = useState({});
 
   useEffect(() => {
     if (selectedUser && authUser) {
@@ -32,6 +35,44 @@ export const ChatContainer = () => {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!socket) {
+      console.error("Socket is not available");
+      return;
+    }
+
+    const handleUserTyping = (data) => {
+      if (data.receiverId === authUser._id) {
+        setTypingUsers((prev) => {
+          const newState = {
+            ...prev,
+            [data.senderId]: data.userName,
+          };
+          return newState;
+        });
+      }
+    };
+
+    const handleUserStopTyping = (data) => {
+      if (data.receiverId === authUser._id) {
+        setTypingUsers((prev) => {
+          const newState = { ...prev };
+          delete newState[data.senderId];
+          return newState;
+        });
+      }
+    };
+
+    socket.on("userTyping", handleUserTyping);
+    socket.on("userStopTyping", handleUserStopTyping);
+
+    return () => {
+      socket.off("userTyping", handleUserTyping);
+      socket.off("userStopTyping", handleUserStopTyping);
+      socket.offAny();
+    };
+  }, [socket, authUser?._id]);
 
   return (
     <>
@@ -70,6 +111,29 @@ export const ChatContainer = () => {
                 </div>
               </div>
             ))}
+
+            <div className="text-white text-xs px-8">
+              {Object.keys(typingUsers).length > 0 && (
+                <>
+                  {Object.entries(typingUsers).map(([id, name], index, arr) => (
+                    <span key={id} className="font-semibold">
+                      {name}
+                      {index < arr.length - 2
+                        ? ", "
+                        : index === arr.length - 2 && arr.length > 1
+                        ? " and "
+                        : ""}
+                    </span>
+                  ))}
+                  <span>
+                    {Object.keys(typingUsers).length === 1
+                      ? " is typing..."
+                      : " are typing..."}
+                  </span>
+                </>
+              )}
+            </div>
+
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (

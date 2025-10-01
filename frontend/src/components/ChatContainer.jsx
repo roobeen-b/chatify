@@ -70,7 +70,6 @@ export const ChatContainer = () => {
     return () => {
       socket.off("userTyping", handleUserTyping);
       socket.off("userStopTyping", handleUserStopTyping);
-      socket.offAny();
     };
   }, [socket, authUser?._id]);
 

@@ -1,6 +1,6 @@
 import toast from "react-hot-toast";
-import { useState, useRef, useCallback } from "react";
 import { XIcon, SendIcon, ImageIcon } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 import { useChatStore } from "../store/useChatStore.js";
 import { useAuthStore } from "../store/useAuthStore.js";
@@ -38,10 +38,9 @@ export const MessageInput = () => {
     }
   };
 
-  // Debounced function to emit typing event
   const emitTypingEvent = useCallback(() => {
     if (!socket || !selectedUser) return;
-    
+
     const typingData = {
       receiverId: selectedUser._id,
       senderId: authUser._id,
@@ -50,7 +49,6 @@ export const MessageInput = () => {
     socket.emit("typing", typingData);
   }, [socket, selectedUser, authUser]);
 
-  // Create a debounced version of the typing event
   const debouncedTyping = useDebounce(emitTypingEvent, 500);
 
   const handleInputChange = (e) => {
@@ -59,15 +57,11 @@ export const MessageInput = () => {
 
     if (!socket || !selectedUser) return;
 
-    // Clear any existing stop typing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
-    // Emit typing event with debounce
     debouncedTyping();
 
-    // Set timeout to stop typing indicator after 1.5 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       const stopTypingData = {
         receiverId: selectedUser._id,
@@ -77,6 +71,14 @@ export const MessageInput = () => {
       socket.emit("stopTyping", stopTypingData);
     }, 1500);
   };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];

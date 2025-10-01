@@ -7,20 +7,20 @@ import { MessageInput } from "./MessageInput";
 import { useEffect, useRef } from "react";
 
 export const ChatContainer = () => {
-  const {
-    selectedUser,
-    messages,
-    isMessagesLoading,
-    subscribeToMessage,
-    getMessagesByUserId,
-    unsubscribeFromMessages,
-  } = useChatStore();
+  const { selectedUser, messages, isMessagesLoading, getMessagesByUserId } =
+    useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
   useEffect(() => {
     if (selectedUser) {
       getMessagesByUserId(selectedUser._id);
+
+      // Mark messages as read when chat is opened
+      const chatId = [useAuthStore.getState().authUser._id, selectedUser._id]
+        .sort()
+        .join("_");
+      useChatStore.getState().markAsRead(chatId);
     }
   }, [selectedUser, getMessagesByUserId]);
 
@@ -29,13 +29,6 @@ export const ChatContainer = () => {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
-  useEffect(() => {
-    subscribeToMessage();
-    return () => {
-      unsubscribeFromMessages();
-    };
-  }, [subscribeToMessage, unsubscribeFromMessages]);
 
   return (
     <>

@@ -8,34 +8,30 @@ import { useEffect, useRef } from "react";
 
 export const ChatContainer = () => {
   const {
-    selectedUser,
     messages,
+    markAsRead,
+    selectedUser,
     isMessagesLoading,
-    subscribeToMessage,
     getMessagesByUserId,
-    unsubscribeFromMessages,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
   useEffect(() => {
-    if (selectedUser) {
+    if (selectedUser && authUser) {
       getMessagesByUserId(selectedUser._id);
+
+      // Mark messages as read when chat is opened
+      const chatId = [authUser._id, selectedUser._id].sort().join("_");
+      markAsRead(chatId);
     }
-  }, [selectedUser, getMessagesByUserId]);
+  }, [selectedUser, getMessagesByUserId, authUser, markAsRead]);
 
   useEffect(() => {
     if (messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
-  useEffect(() => {
-    subscribeToMessage();
-    return () => {
-      unsubscribeFromMessages();
-    };
-  }, [subscribeToMessage, unsubscribeFromMessages]);
 
   return (
     <>

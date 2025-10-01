@@ -13,6 +13,7 @@ export const useChatStore = create((set, get) => ({
   isSendingMessage: false,
   isMessagesLoading: false,
   isSoundEnabled: localStorage.getItem("isSoundEnabled") === "true",
+  unreadCounts: JSON.parse(localStorage.getItem("unreadCounts") || "{}"),
   toggleSound: () => {
     const newValue = !get().isSoundEnabled;
     localStorage.setItem("isSoundEnabled", newValue);
@@ -98,33 +99,55 @@ export const useChatStore = create((set, get) => ({
       set({ isSendingMessage: false });
     }
   },
-  subscribeToMessage: () => {
-    const { socket } = useAuthStore.getState();
-    if (!socket) return;
+  markAsRead: (chatId) => {
+    if (!chatId) return;
 
-    socket.on("newMessage", (newMessage) => {
-      const { selectedUser, isSoundEnabled } = get();
-      if (!selectedUser) return;
-
-      const isMessageSentFromSelectedUser =
-        newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
-
-      const { messages } = get();
-      set({ messages: [...messages, newMessage] });
-
-      if (isSoundEnabled) {
-        const notificationSound = new Audio("/sounds/notification.mp3");
-        notificationSound.currentTime = 0;
-        notificationSound.play().catch((error) => {
-          console.error("Error playing notification sound:", error);
-        });
-      }
+    set((state) => {
+      const newUnreadCounts = { ...state.unreadCounts };
+      delete newUnreadCounts[chatId];
+      localStorage.setItem("unreadCounts", JSON.stringify(newUnreadCounts));
+      return { unreadCounts: newUnreadCounts };
     });
   },
-  unsubscribeFromMessages: () => {
-    const { socket } = useAuthStore.getState();
-    if (!socket) return;
-    socket.off("newMessage");
+
+  handleIncomingMessage: (newMessage) => {
+    const { selectedUser, isSoundEnabled, messages, unreadCounts } = get();
+    const currentUserId = useAuthStore.getState().authUser?._id;
+    const isFromCurrentUser = newMessage.senderId === currentUserId;
+
+    const chatId = [newMessage.senderId, newMessage.receiverId]
+      .sort()
+      .join("_");
+
+    // Add message to current chat if it belongs to the active conversation
+    const isActiveChat =
+      selectedUser &&
+      (newMessage.senderId === selectedUser._id ||
+        newMessage.receiverId === selectedUser._id);
+
+    if (isActiveChat) {
+      set({ messages: [...messages, newMessage] });
+    }
+
+    // For new messages not from current user
+    if (!isFromCurrentUser) {
+      // Update unread count if not in active chat
+      if (!isActiveChat) {
+        const newUnreadCounts = {
+          ...unreadCounts,
+          [chatId]: (unreadCounts[chatId] || 0) + 1,
+        };
+        localStorage.setItem("unreadCounts", JSON.stringify(newUnreadCounts));
+        set({ unreadCounts: newUnreadCounts });
+
+        if (isSoundEnabled) {
+          const notificationSound = new Audio("/sounds/notification.mp3");
+          notificationSound.currentTime = 0;
+          notificationSound.play().catch((error) => {
+            console.error("Error playing notification sound:", error);
+          });
+        }
+      }
+    }
   },
 }));

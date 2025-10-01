@@ -50,23 +50,20 @@ export const ChatsList = () => {
               <h4 className="text-slate-200 font-medium truncate">
                 {chat.fullName}
               </h4>
-              {unreadCounts[`${[authUser._id, chat._id].sort().join("_")}`] >
-                0 && (
-                <span
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-cyan-600 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center animate-pulse"
-                  aria-label={`${
-                    unreadCounts[`${[authUser._id, chat._id].sort().join("_")}`]
-                  } unread messages`}
-                >
-                  {unreadCounts[
-                    `${[authUser._id, chat._id].sort().join("_")}`
-                  ] > 9
-                    ? "9+"
-                    : unreadCounts[
-                        `${[authUser._id, chat._id].sort().join("_")}`
-                      ]}
-                </span>
-              )}
+              {(() => {
+                const chatId = [authUser._id, chat._id].sort().join("_");
+                const count = unreadCounts[chatId];
+                if (!count || count === 0) return null;
+
+                return (
+                  <span
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-cyan-600 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center animate-pulse"
+                    aria-label={`${count} unread messages`}
+                  >
+                    {count > 9 ? "9+" : count}
+                  </span>
+                );
+              })()}
             </div>
           </div>
         </div>

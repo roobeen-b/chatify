@@ -2,7 +2,6 @@ import { useEffect } from "react";
 
 export const useNotifications = () => {
   useEffect(() => {
-    // Request notification permission when component mounts
     if ("Notification" in window && Notification.permission !== "denied") {
       Notification.requestPermission();
     }
@@ -12,10 +11,13 @@ export const useNotifications = () => {
     if (!("Notification" in window)) return null;
 
     if (Notification.permission === "granted") {
-      return new Notification(title, {
+      const notification = new Notification(title, {
         icon: "/avatar.png",
         ...options,
       });
+      notification.onclick = () => {
+        window.focus();
+      };
     }
 
     return null;

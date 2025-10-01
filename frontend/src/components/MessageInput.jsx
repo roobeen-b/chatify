@@ -1,18 +1,23 @@
 import toast from "react-hot-toast";
-import { useState, useRef } from "react";
 import { XIcon, SendIcon, ImageIcon } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 import { useChatStore } from "../store/useChatStore.js";
+import { useAuthStore } from "../store/useAuthStore.js";
 import { useKeyboardSounds } from "../hooks/useKeyboardSounds.js";
+import { useDebounce } from "../hooks/useDebounce.js";
 
 export const MessageInput = () => {
+  const { socket, authUser } = useAuthStore();
   const { playRandomSound } = useKeyboardSounds();
-  const { sendMessage, isSoundEnabled, isSendingMessage } = useChatStore();
+  const { sendMessage, isSoundEnabled, isSendingMessage, selectedUser } =
+    useChatStore();
 
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
 
   const fileInputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -24,7 +29,56 @@ export const MessageInput = () => {
     setText("");
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (socket) {
+      socket.emit("stopTyping", {
+        receiverId: selectedUser._id,
+        senderId: authUser._id,
+        userName: authUser.fullName,
+      });
+    }
   };
+
+  const emitTypingEvent = useCallback(() => {
+    if (!socket || !selectedUser) return;
+
+    const typingData = {
+      receiverId: selectedUser._id,
+      senderId: authUser._id,
+      userName: authUser.fullName,
+    };
+    socket.emit("typing", typingData);
+  }, [socket, selectedUser, authUser]);
+
+  const debouncedTyping = useDebounce(emitTypingEvent, 500);
+
+  const handleInputChange = (e) => {
+    const text = e.target.value;
+    setText(text);
+
+    if (!socket || !selectedUser) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    debouncedTyping();
+
+    typingTimeoutRef.current = setTimeout(() => {
+      const stopTypingData = {
+        receiverId: selectedUser._id,
+        senderId: authUser._id,
+        userName: authUser.fullName,
+      };
+      socket.emit("stopTyping", stopTypingData);
+    }, 1500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -76,8 +130,8 @@ export const MessageInput = () => {
         <input
           type="text"
           value={text}
+          onChange={handleInputChange}
           placeholder="Type your message..."
-          onChange={(e) => setText(e.target.value)}
           className="w-full p-2 border border-slate-700/50 rounded-full focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
         <input

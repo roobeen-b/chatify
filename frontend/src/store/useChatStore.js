@@ -140,21 +140,6 @@ export const useChatStore = create((set, get) => ({
         localStorage.setItem("unreadCounts", JSON.stringify(newUnreadCounts));
         set({ unreadCounts: newUnreadCounts });
 
-        if (Notification.permission === "granted" && document.hidden) {
-          const senderName = newMessage.senderName || "Someone";
-          const notification = new Notification(
-            `New message from ${senderName}`,
-            {
-              body: newMessage.text || "Sent an image",
-              icon: newMessage.image || "/avatar.png",
-            }
-          );
-
-          notification.onclick = () => {
-            window.focus();
-          };
-        }
-
         if (isSoundEnabled) {
           const notificationSound = new Audio("/sounds/notification.mp3");
           notificationSound.currentTime = 0;

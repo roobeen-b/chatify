@@ -154,14 +154,14 @@ export const useChatStore = create((set, get) => ({
             window.focus();
           };
         }
-      }
 
-      if (isSoundEnabled) {
-        const notificationSound = new Audio("/sounds/notification.mp3");
-        notificationSound.currentTime = 0;
-        notificationSound.play().catch((error) => {
-          console.error("Error playing notification sound:", error);
-        });
+        if (isSoundEnabled) {
+          const notificationSound = new Audio("/sounds/notification.mp3");
+          notificationSound.currentTime = 0;
+          notificationSound.play().catch((error) => {
+            console.error("Error playing notification sound:", error);
+          });
+        }
       }
     }
   },
